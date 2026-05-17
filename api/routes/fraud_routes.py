@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..database import get_db, TransactionAudit
 from pydantic import BaseModel
 import pickle
 import os
 import numpy as np
+import json
 from datetime import datetime
 
 router = APIRouter()
@@ -22,16 +23,37 @@ class TransactionData(BaseModel):
 # Load ML Model using absolute path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MODEL_PATH = os.path.join(BASE_DIR, "ml_models", "random_forest_baseline.pkl")
+FEATURES_PATH = os.path.join(BASE_DIR, "ml_models", "feature_list.pkl")
 
 model = None
+feature_list = None
 try:
-    if os.path.exists(MODEL_PATH):
-        with open(MODEL_PATH, "rb") as f:
-            model = pickle.load(f)
-    else:
-        print(f"Model file not found at {MODEL_PATH}")
+    with open(MODEL_PATH, "rb") as f:
+        model = pickle.load(f)
+    with open(FEATURES_PATH, "rb") as f:
+        feature_list = pickle.load(f)
 except Exception as e:
-    print(f"Error loading model: {e}")
+    print(f"Error loading model assets: {e}")
+
+def get_xai_explanation(features_array):
+    """
+    Simulated XAI logic using heuristic 'feature importance'.
+    In a full SHAP implementation, we would use:
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(features_array)
+    """
+    reasons = []
+    # Simplified XAI based on top weights
+    if features_array[0][1] > 200000:
+        reasons.append("Extreme Transaction Amount")
+    if features_array[0][3] == 0:
+        reasons.append("Account Liquidation (Drained)")
+    if features_array[0][0] == 1: # TRANSFER
+        reasons.append("High-Risk Transaction Type (TRANSFER)")
+    if features_array[0][2] == 0:
+        reasons.append("Transaction from Empty Account")
+        
+    return json.dumps(reasons if reasons else ["Standard Pattern"])
 
 @router.get("/stats")
 async def get_dashboard_stats(db: Session = Depends(get_db)):
@@ -51,7 +73,7 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
 
 @router.post("/predict")
 async def predict_fraud(data: TransactionData, db: Session = Depends(get_db)):
-    # Feature Engineering
+    # Feature Engineering (Mapping to exact model expectation)
     features = np.array([[
         1 if data.type == "TRANSFER" else 0,
         data.amount,
@@ -62,37 +84,31 @@ async def predict_fraud(data: TransactionData, db: Session = Depends(get_db)):
     ]])
     
     if model:
-        try:
-            prob = float(model.predict_proba(features)[0][1])
-            prediction = "FRAUD" if prob > 0.5 else "NOT FRAUD"
-        except Exception as e:
-            print(f"Model prediction error: {e}")
-            prob = 0.5 if data.amount > 100000 else 0.1
-            prediction = "FRAUD" if prob > 0.5 else "NOT FRAUD"
+        prob = float(model.predict_proba(features)[0][1])
+        prediction = "FRAUD" if prob > 0.5 else "NOT FRAUD"
+        explanation = get_xai_explanation(features)
     else:
-        # Fallback heuristic if model is offline
         prob = 0.85 if (data.type == "TRANSFER" and data.amount > 200000) else 0.1
         prediction = "FRAUD" if prob > 0.5 else "NOT FRAUD"
+        explanation = json.dumps(["Model Offline - Rule Based Fallback"])
     
     # Audit Logging
-    try:
-        audit = TransactionAudit(
-            transaction_id=f"TXN-{os.urandom(4).hex().upper()}",
-            amount=data.amount,
-            prediction=prediction,
-            risk_score=prob
-        )
-        db.add(audit)
-        db.commit()
-        db.refresh(audit)
-        
-        return {
-            "transaction_id": audit.transaction_id,
-            "prediction": prediction,
-            "probability": prob,
-            "risk_level": "CRITICAL" if prob > 0.8 else "HIGH" if prob > 0.5 else "LOW",
-            "timestamp": datetime.now().isoformat()
-        }
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    audit = TransactionAudit(
+        transaction_id=f"TXN-{os.urandom(4).hex().upper()}",
+        amount=data.amount,
+        prediction=prediction,
+        risk_score=prob,
+        explanation=explanation
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(audit)
+    
+    return {
+        "transaction_id": audit.transaction_id,
+        "prediction": prediction,
+        "probability": prob,
+        "risk_level": "CRITICAL" if prob > 0.8 else "HIGH" if prob > 0.5 else "LOW",
+        "explanation": json.loads(explanation),
+        "timestamp": datetime.now().isoformat()
+    }

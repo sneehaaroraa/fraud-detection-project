@@ -10,3 +10,6 @@ passlib[bcrypt]
 python-multipart
 pydantic[email]
 email-validator
+slowapi
+psycopg2-binary
+shap

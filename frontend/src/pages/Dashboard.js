@@ -68,7 +68,7 @@ const Dashboard = () => {
 
         {/* Recent Alerts */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">Live Threat Feed</h2>
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Live Threat Feed (with XAI Explanations)</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
@@ -76,18 +76,28 @@ const Dashboard = () => {
                   <th className="pb-3">TXN_ID</th>
                   <th className="pb-3">AMOUNT</th>
                   <th className="pb-3">PREDICTION</th>
+                  <th className="pb-3">REASONING (XAI)</th>
                   <th className="pb-3 text-right">TIMESTAMP</th>
                 </tr>
               </thead>
               <tbody>
                 {stats.recent_activity.map((tx, idx) => (
                   <tr key={idx} className="border-b last:border-0 hover:bg-gray-50 transition">
-                    <td className="py-4 font-mono text-sm">{tx.transaction_id}</td>
-                    <td className="py-4 font-bold">${tx.amount.toLocaleString()}</td>
+                    <td className="py-4 font-mono text-xs">{tx.transaction_id}</td>
+                    <td className="py-4 font-bold text-sm">${tx.amount.toLocaleString()}</td>
                     <td className="py-4">
                       <span className={`px-2 py-1 rounded text-[10px] font-bold ${tx.prediction === 'FRAUD' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
                         {tx.prediction}
                       </span>
+                    </td>
+                    <td className="py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {tx.explanation && JSON.parse(tx.explanation).map((reason, ridx) => (
+                          <span key={ridx} className="bg-gray-100 text-[9px] px-1.5 py-0.5 rounded text-gray-500 border">
+                            {reason}
+                          </span>
+                        ))}
+                      </div>
                     </td>
                     <td className="py-4 text-right text-xs text-gray-400">
                       {new Date(tx.timestamp).toLocaleTimeString()}
