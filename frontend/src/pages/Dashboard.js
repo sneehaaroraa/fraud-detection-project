@@ -9,7 +9,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/fraud/stats');
+        const res = await axios.get('/api/fraud/stats');
         setStats(res.data);
       } catch (err) {
         console.error("Failed to fetch dashboard data");
@@ -17,7 +17,7 @@ const Dashboard = () => {
     };
     const fetchThreats = async () => {
       try {
-        const res = await axios.get('http://localhost:8000/api/fraud/insider-threats');
+        const res = await axios.get('/api/fraud/insider-threats');
         setAnomalies(res.data.anomalies);
       } catch (err) {
         console.error("Failed to fetch threat data");
