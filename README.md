@@ -1,49 +1,98 @@
-# 🛡️ FraudEye Pro: Cybersecurity SaaS Platform
+# 🕵️‍♂️ FraudEye Pro: Enterprise-Grade Fraud Intelligence Platform
+> **A High-Performance Cybersecurity SaaS for Real-time Financial Threat Detection.**
 
-FraudEye Pro is a comprehensive, production-ready financial fraud detection platform. It combines state-of-the-art machine learning with a modern full-stack architecture to provide real-time threat intelligence.
+[![FastAPI](https://img.shields.io/badge/API-FastAPI-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/Frontend-React-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
+[![Scikit-Learn](https://img.shields.io/badge/ML-Scikit--Learn-F7931E.svg?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![Compliance](https://img.shields.io/badge/Compliance-PCI--DSS%20%26%20RBI-blue.svg)](./compliance/COMPLIANCE.md)
 
 ---
 
-## 🏗️ Architecture Overiview
+## 📖 Overview
+**FraudEye Pro** is a production-ready Cybersecurity platform designed for modern financial institutions. It bridges the gap between **Data Science** and **Operational Security** by integrating a Hybrid-ML detection engine into a professional SOC (Security Operations Center) dashboard.
 
-```bash
-financial-fraud-cybersecurity/
-├── backend/                # FastAPI High-Performance Backend
-│   ├── auth/               # JWT & Password Security
-│   ├── database/           # SQLite (SQLAlchemy ORM)
-│   ├── fraud_engine/       # Original ML Scripts & Analysis
-│   ├── routes/             # API Endpoints (Auth, Fraud, Analytics)
-│   └── main.py             # Server Entry Point
-├── frontend/               # React SaaS Dashboard
-│   ├── src/pages/          # Landing, Login, Dashboard
-│   └── package.json        # Frontend Dependencies
-├── ml_models/              # Trained ML Sentinel Models
-├── notebooks/              # Cybersecurity Analysis & Research
-└── dashboards/             # Legacy PowerBI/Kibana Exports
+### 🌟 Key Value Propositions
+*   **Explainable AI (XAI)**: No more "Black Box" predictions. Analysts see the exact logic behind every risk score.
+*   **Midnight SOC Interface**: High-contrast dark-mode dashboard designed for 24/7 monitoring.
+*   **Incident Response (IR)**: Built-in rapid containment actions to freeze accounts and block malicious flows instantly.
+*   **Compliance-First**: Every transaction is audit-logged and mapped to **PCI-DSS 4.0** and **RBI** standards.
+
+---
+
+## 🏗️ System Architecture
+The platform follows a scalable **SaaS Architecture**:
+
+```mermaid
+graph TD
+    A[React Dashboard] -->|JWT Auth| B[FastAPI Gateway]
+    B --> C{Hybrid-ML Engine}
+    C -->|Rules| D[Heuristic Sentinel]
+    C -->|ML| E[Random Forest Classifier]
+    E --> F[XAI Module: SHAP Logic]
+    B --> G[(PostgreSQL / Audit Log)]
+    F --> A
 ```
 
-## 🚀 Quick Start
+---
 
-### 1. Backend Setup
+## ✨ Advanced Features
+
+### 🧠 Explainable AI (XAI) Sentinel
+Instead of just returning a "Fraud" flag, FraudEye Pro breaks down the **Rationale**:
+- `Account Liquidation (Drained)`
+- `Extreme Transaction Amount`
+- `High-Risk Origin (TRANSFER)`
+
+### 🚨 Insider Threat Analytics
+Dedicated heuristics to detect anomalous bursts in administrative activity and high-frequency transaction patterns that bypass traditional filters.
+
+### 🔒 Enterprise Security
+- **JWT-based Sessions**: Secure stateless authentication.
+- **Rate Limiting**: Brute-force protection on all sensitive endpoints.
+- **Audit Trails**: Forensic-ready logging of all analyst actions and system predictions.
+
+---
+
+## 🛠️ Tech Stack
+| Category | Technologies |
+| :--- | :--- |
+| **Backend** | Python, FastAPI, SQLAlchemy, JWT, SlowAPI |
+| **Frontend** | React, Tailwind CSS, Axios, Recharts |
+| **Intelligence** | Scikit-Learn, NumPy, XAI Heuristics |
+| **DevOps** | Docker, Docker-Compose, Vercel |
+| **Database** | PostgreSQL (Production), SQLite (Dev) |
+
+---
+
+## 🚀 Getting Started
+
+### 📦 Quick Start with Docker
 ```bash
-cd backend
-pip install -r requirements.txt
-python main.py
+docker-compose up --build
 ```
 
-### 2. Frontend Setup
+### 🛠️ Manual Installation
+**Backend:**
+```bash
+cd api
+pip install -r ../requirements.txt
+python index.py
+```
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm start
 ```
 
-## ✨ Core SaaS Features
-- **JWT Authentication**: Secure, token-based user sessions.
-- **Real-time ML Scoring**: Instant fraud risk assessment via REST API.
-- **Audit Logging**: Every transaction is logged for compliance (PCI-DSS/RBI).
-- **Interactive Dashboard**: Live threat feed and security analytics.
-- **Modular Fraud Engine**: Easily plug in new detection rules or ML models.
+---
+
+## 👤 Author
+**Sneha Arora**  
+*Full-Stack Cybersecurity Engineer | Fraud Intelligence Specialist*  
+[LinkedIn Profile](https://www.linkedin.com/in/sneehaaroraa/) • [Portfolio Site](https://sneehaaroraa.com)
 
 ---
-Built by Sneha Arora — Professional Portfolio Project
+<div align="center">
+  <sub>Built with ❤️ for a safer financial future.</sub>
+</div>
