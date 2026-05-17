@@ -9,6 +9,8 @@
 *.dmg
 *.pkl
 models/
+!models/random_forest_baseline.pkl
+!models/feature_list.pkl
 
 # Logs and temporary files
 logs/

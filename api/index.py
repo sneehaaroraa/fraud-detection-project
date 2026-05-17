@@ -4,18 +4,16 @@
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import pickle
 import numpy as np
-import pandas as pd
 from datetime import datetime
-import json
 import os
 
 app = FastAPI(
     title="🛡️ FraudEye API",
-    description="Real-time Fraud Detection Service",
-    version="1.0.0",
+    description="Real-time Fraud Detection Service (Optimized for Vercel)",
+    version="1.1.0",
 )
 
 app.add_middleware(
@@ -26,24 +24,21 @@ app.add_middleware(
 )
 
 # ── Load Model ────────────────────────────────────────────────
-# Use absolute paths for Vercel environments
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models", "best_model.pkl")
+# Prefer Random Forest for Vercel stability (smaller memory footprint)
+MODEL_PATH = os.path.join(BASE_DIR, "models", "random_forest_baseline.pkl")
 ENCODER_PATH = os.path.join(BASE_DIR, "models", "label_encoder.pkl")
 FEATURES_PATH = os.path.join(BASE_DIR, "models", "feature_list.pkl")
 
 try:
     with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
-    with open(ENCODER_PATH, "rb") as f:
-        label_encoder = pickle.load(f)
     with open(FEATURES_PATH, "rb") as f:
         feature_list = pickle.load(f)
-    print("✅ Model loaded successfully!")
+    print("✅ Optimized model loaded successfully!")
 except Exception as e:
     print(f"⚠️  Model load failed: {e}")
     model = None
-    label_encoder = None
     feature_list = None
 
 # ── Schemas ───────────────────────────────────────────────────
@@ -70,9 +65,10 @@ class FraudPredictionResponse(BaseModel):
 # ── Logic ─────────────────────────────────────────────────────
 def check_rules(tx: TransactionInput) -> list:
     triggered = []
-    if tx.type.upper() == 'TRANSFER' and tx.amount > 100_000:
+    tx_type = tx.type.upper()
+    if tx_type == 'TRANSFER' and tx.amount > 100_000:
         triggered.append("RULE_001: High-Value TRANSFER")
-    if tx.type.upper() == 'CASH_OUT' and tx.amount > 200_000:
+    if tx_type == 'CASH_OUT' and tx.amount > 200_000:
         triggered.append("RULE_002: High-Value CASH_OUT")
     if tx.new_balance_sender == 0 and tx.amount > 50_000:
         triggered.append("RULE_003: Account Drained")
@@ -80,15 +76,12 @@ def check_rules(tx: TransactionInput) -> list:
         triggered.append("RULE_005: Large Amount")
     return triggered
 
-def engineer_features(tx: TransactionInput) -> pd.DataFrame:
+def engineer_features(tx: TransactionInput):
     type_map = {'CASH_IN': 0, 'CASH_OUT': 1, 'DEBIT': 2, 'PAYMENT': 3, 'TRANSFER': 4}
     tx_type = tx.type.upper()
-    
-    if label_encoder is not None and tx_type in label_encoder.classes_:
-        type_encoded = int(label_encoder.transform([tx_type])[0])
-    else:
-        type_encoded = type_map.get(tx_type, 0)
+    type_encoded = type_map.get(tx_type, 0)
 
+    # Creating a dictionary and then converting to list in the correct order
     features = {
         'type_encoded': type_encoded,
         'amount': tx.amount,
@@ -106,15 +99,17 @@ def engineer_features(tx: TransactionInput) -> pd.DataFrame:
         'isFlaggedFraud': tx.isFlaggedFraud,
     }
 
-    X = pd.DataFrame([features])
-    if feature_list is not None:
-        X = X[feature_list]
-    return X
+    # Ensure features are in the exact order the model expects
+    if feature_list:
+        return np.array([[features[f] for f in feature_list]])
+    else:
+        # Fallback order if feature_list is missing
+        return np.array([[features[k] for k in sorted(features.keys())]])
 
 # ── Endpoints ─────────────────────────────────────────────────
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "model_loaded": model is not None}
+    return {"status": "ok", "model_loaded": model is not None, "optimized": True}
 
 @app.post("/api/predict", response_model=FraudPredictionResponse)
 def predict(transaction: TransactionInput):
@@ -126,9 +121,14 @@ def predict(transaction: TransactionInput):
     if model is not None:
         try:
             X = engineer_features(transaction)
-            fraud_prob = float(model.predict_proba(X)[0][1])
+            # Some sklearn models only have predict, check for predict_proba
+            if hasattr(model, 'predict_proba'):
+                fraud_prob = float(model.predict_proba(X)[0][1])
+            else:
+                fraud_prob = float(model.predict(X)[0])
+            
             prediction = "FRAUD" if fraud_prob >= 0.5 else "NOT FRAUD"
-            model_name = "CatBoost/XGBoost (Vercel)"
+            model_name = "RandomForest (Lite)"
         except Exception as e:
             print(f"Prediction error: {e}")
             fraud_prob = 0.5 if len(rules_triggered) > 0 else 0.1
