@@ -1,0 +1,93 @@
+{
+  "fraud_detection_rules": [
+    {
+      "rule_id": "RULE_001",
+      "name": "High-Value TRANSFER",
+      "description": "Detects large fund transfers that are likely money laundering",
+      "condition": "type == 'TRANSFER' AND amount > 100000",
+      "severity": "HIGH",
+      "field_checks": {
+        "type": "TRANSFER",
+        "amount_gt": 100000
+      },
+      "rationale": "All fraud in the dataset occurs in TRANSFER and CASH_OUT. High-value TRANSFERs are the most common fraud pattern.",
+      "false_positive_risk": "Medium \u2014 legitimate large transfers exist"
+    },
+    {
+      "rule_id": "RULE_002",
+      "name": "High-Value CASH_OUT",
+      "description": "Detects large cash-out transactions which often follow fraudulent transfers",
+      "condition": "type == 'CASH_OUT' AND amount > 200000",
+      "severity": "HIGH",
+      "field_checks": {
+        "type": "CASH_OUT",
+        "amount_gt": 200000
+      },
+      "rationale": "Money laundering pattern: fraudster transfers funds then cashes out immediately",
+      "false_positive_risk": "Medium"
+    },
+    {
+      "rule_id": "RULE_003",
+      "name": "Account Completely Drained",
+      "description": "Sender balance drops to exactly zero after transaction \u2014 classic fraud signal",
+      "condition": "new_balance_sender == 0 AND amount > 50000",
+      "severity": "HIGH",
+      "field_checks": {
+        "new_balance_sender": 0,
+        "amount_gt": 50000
+      },
+      "rationale": "99%+ of fraud cases result in the sender account being drained to \u20b90",
+      "false_positive_risk": "Low \u2014 rarely happens in legitimate transactions"
+    },
+    {
+      "rule_id": "RULE_004",
+      "name": "Bank System Flag",
+      "description": "Transaction was flagged by the bank's internal system",
+      "condition": "isFlaggedFraud == 1",
+      "severity": "HIGH",
+      "field_checks": {
+        "isFlaggedFraud": 1
+      },
+      "rationale": "If the bank's own system flagged it, always worth investigating",
+      "false_positive_risk": "Low \u2014 but note: only catches 0.2% of actual fraud"
+    },
+    {
+      "rule_id": "RULE_005",
+      "name": "Very Large Amount Transaction",
+      "description": "Any transaction over \u20b9500,000 regardless of type",
+      "condition": "amount > 500000",
+      "severity": "MEDIUM",
+      "field_checks": {
+        "amount_gt": 500000
+      },
+      "rationale": "Unusually large transactions warrant investigation even if not confirmed fraud",
+      "false_positive_risk": "High \u2014 many large legitimate transactions exist"
+    },
+    {
+      "rule_id": "RULE_006",
+      "name": "High-Frequency Account",
+      "description": "Same account makes 3 or more transactions within a single hour",
+      "condition": "COUNT(account_from, within_same_step) >= 3",
+      "severity": "MEDIUM",
+      "field_checks": {
+        "frequency_threshold": 3,
+        "window": "1 hour (1 step)"
+      },
+      "rationale": "Fraudsters often send multiple transfers rapidly to launder money",
+      "false_positive_risk": "Medium \u2014 some business accounts legitimately do this"
+    },
+    {
+      "rule_id": "RULE_007",
+      "name": "Zero-Balance Origin Account",
+      "description": "Sender had \u20b90 before the transaction but still sent money \u2014 suspicious",
+      "condition": "old_balance_sender == 0 AND amount > 0",
+      "severity": "MEDIUM",
+      "field_checks": {
+        "old_balance_sender": 0,
+        "amount_gt": 0
+      },
+      "rationale": "Indicates possible synthetic or ghost account used in fraud",
+      "false_positive_risk": "Medium \u2014 could be a newly opened account"
+    }
+  ]
+}

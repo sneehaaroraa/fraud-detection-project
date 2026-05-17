@@ -1,0 +1,99 @@
+fraud_detection_rules:
+
+  - rule_id: RULE_001
+    name: High-Value TRANSFER
+    description: Detects large fund transfers likely associated with money laundering
+    condition: type == "TRANSFER" AND amount > 100000
+    severity: HIGH
+    field_checks:
+      type: TRANSFER
+      amount_gt: 100000
+    rationale: >
+      All confirmed fraud in the PaySim dataset occurs in TRANSFER and CASH_OUT
+      transaction types. High-value TRANSFERs are the single most common fraud pattern.
+    false_positive_risk: Medium — legitimate large transfers exist
+    alert_action: Trigger SIEM alert, flag account for review
+
+  - rule_id: RULE_002
+    name: High-Value CASH_OUT
+    description: Detects large cash-out transactions, common after fraudulent transfers
+    condition: type == "CASH_OUT" AND amount > 200000
+    severity: HIGH
+    field_checks:
+      type: CASH_OUT
+      amount_gt: 200000
+    rationale: >
+      Classic money laundering pattern: fraudster first TRANSFERs stolen funds,
+      then CASH_OUT immediately. Flagging high-value CASH_OUT catches this second step.
+    false_positive_risk: Medium
+    alert_action: Trigger SIEM alert, cross-check with recent TRANSFER from same account
+
+  - rule_id: RULE_003
+    name: Account Completely Drained
+    description: Sender's balance drops to exactly zero — strongest fraud indicator in dataset
+    condition: new_balance_sender == 0 AND amount > 50000
+    severity: HIGH
+    field_checks:
+      new_balance_sender: 0
+      amount_gt: 50000
+    rationale: >
+      Over 99% of confirmed fraud cases in this dataset result in the sender account
+      being fully drained to ₹0. This is the single strongest rule-based signal.
+    false_positive_risk: Low — rarely happens in legitimate transactions
+    alert_action: Trigger CRITICAL alert, immediately freeze account pending review
+
+  - rule_id: RULE_004
+    name: Bank System Internal Flag
+    description: Transaction was flagged by the bank's own internal fraud system
+    condition: isFlaggedFraud == 1
+    severity: HIGH
+    field_checks:
+      isFlaggedFraud: 1
+    rationale: >
+      If the institution's own rule engine flagged the transaction, it warrants
+      immediate investigation. NOTE: isFlaggedFraud only catches 0.2% of actual fraud —
+      so this rule alone is not sufficient. Must be combined with others.
+    false_positive_risk: Low (precision is high, but recall is very low)
+    alert_action: Trigger immediate alert, escalate to fraud team
+
+  - rule_id: RULE_005
+    name: Very Large Transaction Amount
+    description: Any transaction exceeding ₹500,000 regardless of type
+    condition: amount > 500000
+    severity: MEDIUM
+    field_checks:
+      amount_gt: 500000
+    rationale: >
+      Transactions above ₹500,000 are statistically unusual and warrant review,
+      even if not confirmed as fraud. Useful as a supplementary signal.
+    false_positive_risk: High — many large legitimate transactions exist
+    alert_action: Log for review, do not auto-block
+
+  - rule_id: RULE_006
+    name: High-Frequency Account Activity
+    description: Same account makes 3 or more transactions within a single hour
+    condition: COUNT(transactions from account_from within same step) >= 3
+    severity: MEDIUM
+    field_checks:
+      frequency_threshold: 3
+      time_window: 1 hour (1 step unit)
+    rationale: >
+      Fraudsters use high-frequency micro-transaction patterns to either test
+      stolen accounts or rapidly launder money. Multiple transactions per hour
+      from the same origin account is a red flag.
+    false_positive_risk: Medium — some legitimate business accounts have high volumes
+    alert_action: Rate-limit account, trigger investigation
+
+  - rule_id: RULE_007
+    name: Zero-Balance Origin Account
+    description: Sender had ₹0 balance before transaction but still sent funds
+    condition: old_balance_sender == 0 AND amount > 0
+    severity: MEDIUM
+    field_checks:
+      old_balance_sender: 0
+      amount_gt: 0
+    rationale: >
+      A sender with zero starting balance executing a transaction suggests a synthetic,
+      ghost, or compromised account. Common in simulated fraud injection attacks.
+    false_positive_risk: Medium — newly opened accounts can legitimately have ₹0
+    alert_action: Flag for KYC re-verification, hold transaction pending review

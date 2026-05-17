@@ -1,0 +1,23 @@
+# Datasets
+*.csv
+*.json
+*.jsonl
+!fraud_detection_rules.json
+!reports/
+
+# Binaries/Installers
+*.dmg
+*.pkl
+
+# Logs and temporary files
+logs/
+catboost_info/
+__pycache__/
+.DS_Store
+.matplotlib/
+.cache/
+
+# Folders containing large data
+data/
+"data:/"
+week6/logs/
