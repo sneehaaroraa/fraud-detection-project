@@ -2,12 +2,13 @@
 *.csv
 *.json
 *.jsonl
-!fraud_detection_rules.json
-!reports/
+!src/config/fraud_detection_rules.json
+!docs/
 
 # Binaries/Installers
 *.dmg
 *.pkl
+models/
 
 # Logs and temporary files
 logs/
