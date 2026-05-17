@@ -29,13 +29,10 @@ app.add_middleware(
 app.include_router(auth_routes.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(fraud_routes.router, prefix="/api/fraud", tags=["Fraud Engine"])
 
-@app.get("/")
+@app.get("/api/health")
 def health_check():
     return {
         "status": "online",
         "platform": "FraudEye Pro",
         "engine": "v2.0-Hybrid-ML"
     }
-
-if __name__ == "__main__":
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
