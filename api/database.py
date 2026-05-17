@@ -1,10 +1,15 @@
-from sqlalchemy import create_all, Column, Integer, String, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 import datetime
+import os
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./fraudeye_pro.db"
+# Use /tmp for SQLite on Vercel as it's the only writable directory
+if os.environ.get("VERCEL"):
+    SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/fraudeye_pro.db"
+else:
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./fraudeye_pro.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
